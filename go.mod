@@ -3,6 +3,7 @@ module git.ssns.se/git/frozendragon/simple-auth-proxy
 go 1.19
 
 require (
+	github.com/gorilla/websocket v1.5.0
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/rgamba/evtwebsocket v0.0.0-20181029234908-48b8cd9f8616
 	golang.org/x/net v0.7.0
