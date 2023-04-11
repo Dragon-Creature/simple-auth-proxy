@@ -2,9 +2,17 @@ import './App.css';
 
 function App() {
   const login = () => {
-      fetch('login')
-          .then(response => response.json())
-          .catch(error => console.error(error));
+      const body = {}
+      fetch('auth', {
+          method: 'POST',
+          headers: {
+              Accept: 'application.json',
+              'Content-Type': 'application/json'
+          },
+          body: body,
+        })
+      .then(response => response.json())
+      .catch(error => console.error(error));
   }
 
   return (
