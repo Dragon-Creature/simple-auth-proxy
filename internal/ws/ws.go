@@ -13,7 +13,7 @@ type WS struct {
 	receive chan string
 }
 
-func (w *WS) EstablishConnection(c echo.Context) error {
+func (w *WS) HandleWebsocket(c echo.Context) error {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
 

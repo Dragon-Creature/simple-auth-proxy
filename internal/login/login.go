@@ -2,6 +2,7 @@ package login
 
 import (
 	"fmt"
+	"git.ssns.se/git/frozendragon/simple-auth-proxy/internal/ws"
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
@@ -13,6 +14,15 @@ import (
 func GetLoginPage(c echo.Context) error {
 	username, password := getToken(c)
 	if username == "username" && password == "password" {
+		if c.IsWebSocket() {
+			path := c.Request().RequestURI
+			w := ws.CreateClient(path)
+			err := w.HandleWebsocket(c)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 		client := http.Client{Timeout: time.Second * 5}
 		request, err := http.NewRequest(c.Request().Method, fmt.Sprintf("http://localhost:30085%s", c.Request().RequestURI), nil)
 		if err != nil {
