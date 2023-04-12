@@ -39,11 +39,11 @@ func (w *WS) HandleWebsocket(c echo.Context) error {
 	return nil
 }
 
-func CreateClient(path string) WS {
+func CreateClient(targetURL string, path string) WS {
 	send := make(chan []byte, 10)
 	receive := make(chan string, 10)
 
-	u := url.URL{Scheme: "ws", Host: "localhost:30085", Path: path}
+	u := url.URL{Scheme: "ws", Host: targetURL, Path: path}
 	log.Printf("connecting to %s", u.String())
 
 	// connect to the WebSocket server

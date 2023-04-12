@@ -14,13 +14,20 @@ import (
 	"time"
 )
 
-func HandleTraffic(c echo.Context) error {
+type Proxy struct {
+	TargetProtocol string
+	TargetURL      string
+	HtpasswdFile   string
+	CookieMaxAge   int
+}
+
+func (p *Proxy) HandleTraffic(c echo.Context) error {
 	username, password := getToken(c)
-	if checkToken(Credential{Username: username, Password: password}) {
+	if p.checkToken(Credential{Username: username, Password: password}) {
 		if c.IsWebSocket() {
-			return handleWebSocket(c)
+			return p.handleWebSocket(c)
 		}
-		return handleHttpProxy(c)
+		return p.handleHttpProxy(c)
 	}
 	err := sendLoginFiles(c)
 	if err != nil {
@@ -29,9 +36,9 @@ func HandleTraffic(c echo.Context) error {
 	return nil
 }
 
-func handleWebSocket(c echo.Context) error {
+func (p *Proxy) handleWebSocket(c echo.Context) error {
 	path := c.Request().RequestURI
-	w := ws.CreateClient(path)
+	w := ws.CreateClient(p.TargetURL, path)
 	err := w.HandleWebsocket(c)
 	if err != nil {
 		return errors.WithStack(err)
@@ -39,9 +46,9 @@ func handleWebSocket(c echo.Context) error {
 	return nil
 }
 
-func handleHttpProxy(c echo.Context) error {
+func (p *Proxy) handleHttpProxy(c echo.Context) error {
 	client := http.Client{Timeout: time.Second * 5}
-	request, err := http.NewRequest(c.Request().Method, fmt.Sprintf("http://localhost:30085%s", c.Request().RequestURI), nil)
+	request, err := http.NewRequest(c.Request().Method, fmt.Sprintf("%s%s%s", p.TargetProtocol, p.TargetURL, c.Request().RequestURI), nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -99,7 +106,7 @@ func sendLoginFiles(c echo.Context) error {
 	return nil
 }
 
-func PostAuth(c echo.Context) error {
+func (p *Proxy) PostAuth(c echo.Context) error {
 	bodyData, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return errors.WithStack(err)
@@ -109,9 +116,9 @@ func PostAuth(c echo.Context) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	hashCredential, auth := checkCredentials(credential)
+	hashCredential, auth := p.checkCredentials(credential)
 	if auth {
-		setCookie(c, *hashCredential)
+		p.setCookie(c, *hashCredential)
 		err = c.Redirect(http.StatusMovedPermanently, "/")
 		if err != nil {
 			return errors.WithStack(err)
@@ -126,16 +133,16 @@ func PostAuth(c echo.Context) error {
 	return nil
 }
 
-func setCookie(c echo.Context, credential Credential) {
-	expire := time.Now().Add(20 * time.Minute) // Expires in 20 minutes
-	cookie := http.Cookie{Name: "token", Value: fmt.Sprintf("%s:%s", credential.Username, credential.Password), Path: "/", Expires: expire, MaxAge: 86400}
+func (p *Proxy) setCookie(c echo.Context, credential Credential) {
+	expire := time.Now().Add(time.Duration(p.CookieMaxAge) * time.Second)
+	cookie := http.Cookie{Name: "token", Value: fmt.Sprintf("%s:%s", credential.Username, credential.Password), Path: "/", Expires: expire, MaxAge: p.CookieMaxAge}
 	c.SetCookie(&cookie)
-	cookie = http.Cookie{Name: "token", Value: fmt.Sprintf("%s:%s", credential.Username, credential.Password), Path: "/", Expires: expire, MaxAge: 86400, HttpOnly: true, Secure: true}
+	cookie = http.Cookie{Name: "token", Value: fmt.Sprintf("%s:%s", credential.Username, credential.Password), Path: "/", Expires: expire, MaxAge: p.CookieMaxAge, HttpOnly: true, Secure: true}
 	c.SetCookie(&cookie)
 }
 
-func checkToken(credential Credential) bool {
-	credentials, err := getPasswdFile()
+func (p *Proxy) checkToken(credential Credential) bool {
+	credentials, err := p.getPasswdFile()
 	if err != nil {
 		return false
 	}
@@ -147,8 +154,8 @@ func checkToken(credential Credential) bool {
 	return false
 }
 
-func checkCredentials(credential Credential) (*Credential, bool) {
-	credentials, err := getPasswdFile()
+func (p *Proxy) checkCredentials(credential Credential) (*Credential, bool) {
+	credentials, err := p.getPasswdFile()
 	if err != nil {
 		return nil, false
 	}
@@ -169,8 +176,8 @@ type Credential struct {
 	Password string `json:"password"`
 }
 
-func getPasswdFile() ([]Credential, error) {
-	data, err := os.ReadFile("htpasswd")
+func (p *Proxy) getPasswdFile() ([]Credential, error) {
+	data, err := os.ReadFile(p.HtpasswdFile)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
