@@ -25,12 +25,22 @@ func (p *Proxy) HandleTraffic(c echo.Context) error {
 	username, password := getToken(c)
 	if p.checkToken(Credential{Username: username, Password: password}) {
 		if c.IsWebSocket() {
-			return p.handleWebSocket(c)
+			err := p.handleWebSocket(c)
+			if err != nil {
+				c.Logger().Error(err)
+			}
+			return err
 		}
-		return p.handleHttpProxy(c)
+		err := p.handleHttpProxy(c)
+		if err != nil {
+			err = errors.WithStack(err)
+			c.Logger().Error(err)
+		}
+		return nil
 	}
 	err := sendLoginFiles(c)
 	if err != nil {
+		c.Logger().Error(errors.WithStack(err))
 		return errors.WithStack(err)
 	}
 	return nil
@@ -114,19 +124,25 @@ func (p *Proxy) PostAuth(c echo.Context) error {
 	credential := Credential{}
 	err = json.Unmarshal(bodyData, &credential)
 	if err != nil {
-		return errors.WithStack(err)
+		err = errors.WithStack(err)
+		c.Logger().Error(err)
+		return err
 	}
 	hashCredential, auth := p.checkCredentials(credential)
 	if auth {
 		p.setCookie(c, *hashCredential)
 		err = c.Redirect(http.StatusMovedPermanently, "/")
 		if err != nil {
-			return errors.WithStack(err)
+			err = errors.WithStack(err)
+			c.Logger().Error(err)
 		}
+		return nil
 	} else {
 		err = c.String(http.StatusUnauthorized, "invalid credentials")
 		if err != nil {
-			return errors.WithStack(err)
+			err = errors.WithStack(err)
+			c.Logger().Error(err)
+			return err
 		}
 	}
 
@@ -144,6 +160,7 @@ func (p *Proxy) setCookie(c echo.Context, credential Credential) {
 func (p *Proxy) checkToken(credential Credential) bool {
 	credentials, err := p.getPasswdFile()
 	if err != nil {
+		fmt.Println(errors.WithStack(err))
 		return false
 	}
 	for _, c := range credentials {
