@@ -14,44 +14,52 @@ import (
 	"time"
 )
 
-func GetLoginPage(c echo.Context) error {
+func HandleTraffic(c echo.Context) error {
 	username, password := getToken(c)
 	if checkToken(Credential{Username: username, Password: password}) {
 		if c.IsWebSocket() {
-			path := c.Request().RequestURI
-			w := ws.CreateClient(path)
-			err := w.HandleWebsocket(c)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-			return nil
+			return handleWebSocket(c)
 		}
-		client := http.Client{Timeout: time.Second * 5}
-		request, err := http.NewRequest(c.Request().Method, fmt.Sprintf("http://localhost:30085%s", c.Request().RequestURI), nil)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		for key, value := range c.Request().Header {
-			request.Header.Add(key, value[0])
-		}
-		response, err := client.Do(request)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		data, err := io.ReadAll(response.Body)
-		if err != nil {
-			panic(err)
-		}
-		for key, value := range response.Header {
-			c.Response().Header().Set(key, value[0])
-		}
-		err = c.String(http.StatusOK, string(data))
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		return nil
+		return handleHttpProxy(c)
 	}
-	err := sendFiles(c)
+	err := sendLoginFiles(c)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+func handleWebSocket(c echo.Context) error {
+	path := c.Request().RequestURI
+	w := ws.CreateClient(path)
+	err := w.HandleWebsocket(c)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
+}
+
+func handleHttpProxy(c echo.Context) error {
+	client := http.Client{Timeout: time.Second * 5}
+	request, err := http.NewRequest(c.Request().Method, fmt.Sprintf("http://localhost:30085%s", c.Request().RequestURI), nil)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	for key, value := range c.Request().Header {
+		request.Header.Add(key, value[0])
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		panic(err)
+	}
+	for key, value := range response.Header {
+		c.Response().Header().Set(key, value[0])
+	}
+	err = c.String(http.StatusOK, string(data))
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -70,7 +78,7 @@ func getToken(c echo.Context) (string, string) {
 	return "", ""
 }
 
-func sendFiles(c echo.Context) error {
+func sendLoginFiles(c echo.Context) error {
 	filename := c.Request().RequestURI
 	if filename == "/" {
 		filename = "index.html"

@@ -7,7 +7,7 @@ import (
 
 func main() {
 	e := echo.New()
-	e.GET("/*", proxy.GetLoginPage)
+	e.GET("/*", proxy.HandleTraffic)
 	e.POST("/auth", proxy.PostAuth)
 	e.Logger.Fatal(e.Start(":8080"))
 }
