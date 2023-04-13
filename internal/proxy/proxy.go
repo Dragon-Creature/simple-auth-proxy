@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -109,10 +110,22 @@ func sendLoginFiles(c echo.Context) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = c.HTML(http.StatusOK, string(data))
+	ext := filepath.Ext(filename)
+
+	fileExtToContentType := map[string]string{
+		"html": "text/html",
+		"css":  "text/css",
+		"json": "application/json",
+		"txt":  "text/plain",
+		"png":  "image/png",
+		"js":   "application/javascript",
+		"ico":  "image/x-icon",
+	}
+	err = c.Blob(http.StatusOK, fileExtToContentType[ext], data)
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
 	return nil
 }
 
