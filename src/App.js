@@ -22,19 +22,31 @@ function App(props) {
       .catch(error => console.error(error));
     }
 
+    const handleKeyPress = (event) => {
+        if(event.key === 'Enter'){
+            login()
+        }
+    }
+
     return (
     <div className="App">
-      <header className="App-header">
-      </header>
-      <body>
-        <p>username</p>
-        <input type={"text"} value={username} onInput={e => setUsername(e.target.value)}/>
-        <p>password</p>
-        <input type={"password"} value={password} onInput={e => setPassword(e.target.value)}/>
-        <button onClick={login}>
-            Submit
-        </button>
-      </body>
+          <body>
+              <div className={"login_prompt"}>
+                  <div className={"prompt_username"}>
+                    <p className={"prompt_username_label"}>username</p>
+                    <input type={"text"} value={username} onInput={e => setUsername(e.target.value)}/>
+                  </div>
+                  <div className={"prompt_password"}>
+                    <p className={"prompt_password_label"}>password</p>
+                    <input type={"password"} value={password} onInput={e => setPassword(e.target.value)} onKeyDown={handleKeyPress}/>
+                  </div>
+                  <div className={"prompt_submit"}>
+                    <button onClick={login}>
+                        Submit
+                    </button>
+                  </div>
+              </div>
+          </body>
     </div>
     );
 }

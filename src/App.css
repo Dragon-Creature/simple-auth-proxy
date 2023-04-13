@@ -1,0 +1,34 @@
+div.login_prompt {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+}
+
+div.prompt_username {
+    color: bisque;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+}
+
+p.prompt_username_label {
+    align-items: start;
+}
+
+div.prompt_password {
+    color: bisque;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+}
+
+p.prompt_password_label {
+    align-items: start;
+}
+
+div.prompt_submit {
+    margin: 1em;
+}
