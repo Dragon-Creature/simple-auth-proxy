@@ -7,11 +7,11 @@ function App(props) {
     const [error, setError] = useState(props?.value ?? '');
 
     const login = () => {
-      const body = {
+        const body = {
           username,
           password
-      }
-      fetch('auth', {
+        }
+        fetch('auth', {
           method: 'POST',
           headers: {
               Accept: 'application.json',
@@ -19,16 +19,17 @@ function App(props) {
           },
           body: JSON.stringify(body),
         })
-      .then(response => {
-          console.log(response.status);
-          if (response.status !== 301) {
-              setError(<p className={"error_message"}>Failed to authenticate</p>)
+        .then(response => {
+            //todo fetch will automatic do the next api call when it gets 301 but not reload the page, solve
+          if (response.ok) {
+              window.location.reload();
           }
-      })
-      .catch(error => {
+          setError(<p className={"error_message"}>Failed to authenticate</p>)
+        })
+        .catch(error => {
           setError(<p className={"error_message"}>Failed to authenticate: unknown error</p>)
           console.error(error)
-      });
+        });
     }
 
     const handleKeyPress = (event) => {
