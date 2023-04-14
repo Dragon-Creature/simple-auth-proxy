@@ -129,6 +129,11 @@ func sendLoginFiles(c echo.Context) error {
 	return nil
 }
 
+type Error struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 func (p *Proxy) PostAuth(c echo.Context) error {
 	bodyData, err := io.ReadAll(c.Request().Body)
 	if err != nil {
@@ -151,7 +156,16 @@ func (p *Proxy) PostAuth(c echo.Context) error {
 		}
 		return nil
 	} else {
-		err = c.String(http.StatusUnauthorized, "invalid credentials")
+		data, err := json.Marshal(Error{
+			Message: "invalid credentials",
+			Code:    http.StatusUnauthorized,
+		})
+		if err != nil {
+			err = errors.WithStack(err)
+			c.Logger().Error(err)
+			return err
+		}
+		err = c.String(http.StatusUnauthorized, string(data))
 		if err != nil {
 			err = errors.WithStack(err)
 			c.Logger().Error(err)

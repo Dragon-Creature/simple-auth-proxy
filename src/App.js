@@ -4,6 +4,7 @@ import { useState } from 'react';
 function App(props) {
     const [username, setUsername] = useState(props?.value ?? '');
     const [password, setPassword] = useState(props?.value ?? '');
+    const [error, setError] = useState(props?.value ?? '');
 
     const login = () => {
       const body = {
@@ -18,8 +19,16 @@ function App(props) {
           },
           body: JSON.stringify(body),
         })
-      .then(response => response.json())
-      .catch(error => console.error(error));
+      .then(response => {
+          console.log(response.status);
+          if (response.status !== 301) {
+              setError(<p className={"error_message"}>Failed to authenticate</p>)
+          }
+      })
+      .catch(error => {
+          setError(<p className={"error_message"}>Failed to authenticate: unknown error</p>)
+          console.error(error)
+      });
     }
 
     const handleKeyPress = (event) => {
@@ -32,18 +41,21 @@ function App(props) {
     <div className="App">
           <body>
               <div className={"login_prompt"}>
-                  <div className={"prompt_username"}>
-                    <p className={"prompt_username_label"}>username</p>
-                    <input type={"text"} value={username} onInput={e => setUsername(e.target.value)}/>
-                  </div>
-                  <div className={"prompt_password"}>
-                    <p className={"prompt_password_label"}>password</p>
-                    <input type={"password"} value={password} onInput={e => setPassword(e.target.value)} onKeyDown={handleKeyPress}/>
-                  </div>
-                  <div className={"prompt_submit"}>
-                    <button onClick={login}>
-                        Submit
-                    </button>
+                  {error}
+                  <div className={"prompt_box"}>
+                      <div className={"prompt_username"}>
+                        <p className={"prompt_username_label"}>username</p>
+                        <input type={"text"} value={username} onInput={e => setUsername(e.target.value)}/>
+                      </div>
+                      <div className={"prompt_password"}>
+                        <p className={"prompt_password_label"}>password</p>
+                        <input type={"password"} value={password} onInput={e => setPassword(e.target.value)} onKeyDown={handleKeyPress}/>
+                      </div>
+                      <div className={"prompt_submit"}>
+                        <button onClick={login}>
+                            Submit
+                        </button>
+                      </div>
                   </div>
               </div>
           </body>
