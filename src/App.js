@@ -12,15 +12,14 @@ function App(props) {
           password
         }
         fetch('auth', {
-          method: 'POST',
-          headers: {
-              Accept: 'application.json',
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(body),
+            method: 'POST',
+            headers: {
+                Accept: 'application.json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body),
         })
         .then(response => {
-            //todo fetch will automatic do the next api call when it gets 301 but not reload the page, solve
           if (response.ok) {
               window.location.reload();
           }

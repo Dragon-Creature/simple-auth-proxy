@@ -57,29 +57,36 @@ func (p *Proxy) handleWebSocket(c echo.Context) error {
 	return nil
 }
 
-func (p *Proxy) handleHttpProxy(c echo.Context) error {
+func (p *Proxy) handleHttpProxy(c echo.Context) (err error) {
 	client := http.Client{Timeout: time.Second * 5}
-	request, err := http.NewRequest(c.Request().Method, fmt.Sprintf("%s%s%s", p.TargetProtocol, p.TargetURL, c.Request().RequestURI), nil)
-	if err != nil {
-		return errors.WithStack(err)
+	request, callErr := http.NewRequest(c.Request().Method, fmt.Sprintf("%s%s%s", p.TargetProtocol, p.TargetURL, c.Request().RequestURI), nil)
+	if callErr != nil {
+		err = errors.WithStack(callErr)
+		return err
 	}
 	for key, value := range c.Request().Header {
 		request.Header.Add(key, value[0])
 	}
-	response, err := client.Do(request)
-	if err != nil {
-		return errors.WithStack(err)
+	response, callErr := client.Do(request)
+	if callErr != nil {
+		err = errors.WithStack(callErr)
+		return err
 	}
-	data, err := io.ReadAll(response.Body)
-	if err != nil {
-		panic(err)
+	defer func() {
+		err = response.Body.Close()
+	}()
+	data, callErr := io.ReadAll(response.Body)
+	if callErr != nil {
+		err = errors.WithStack(callErr)
+		return err
 	}
 	for key, value := range response.Header {
 		c.Response().Header().Set(key, value[0])
 	}
-	err = c.String(http.StatusOK, string(data))
-	if err != nil {
-		return errors.WithStack(err)
+	callErr = c.String(http.StatusOK, string(data))
+	if callErr != nil {
+		err = errors.WithStack(callErr)
+		return err
 	}
 	return nil
 }
@@ -149,7 +156,8 @@ func (p *Proxy) PostAuth(c echo.Context) error {
 	hashCredential, auth := p.checkCredentials(credential)
 	if auth {
 		p.setCookie(c, *hashCredential)
-		err = c.Redirect(http.StatusMovedPermanently, "/")
+		//http 301 causes a bunch of issues with fetch, the specs prevents you from doing a proper redirect so return http 200 instead and redirect based on header.
+		err = c.Redirect(http.StatusOK, "/")
 		if err != nil {
 			err = errors.WithStack(err)
 			c.Logger().Error(err)
