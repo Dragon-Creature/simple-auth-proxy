@@ -15,8 +15,15 @@ COPY package-lock.json package-lock.json
 
 RUN apk add --update nodejs npm
 RUN npm run build
-RUN go build -o main ./cmd
+RUN go build -o app ./cmd
+
+FROM alpine:latest
 
 EXPOSE 8080
 
-CMD ["./main"]
+WORKDIR /app/
+
+COPY --from=builder /app/app ./
+COPY --from=builder /app/build ./build
+
+CMD ["./app"]

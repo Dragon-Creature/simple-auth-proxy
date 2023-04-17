@@ -49,8 +49,11 @@ func (p *Proxy) HandleTraffic(c echo.Context) error {
 
 func (p *Proxy) handleWebSocket(c echo.Context) error {
 	path := c.Request().RequestURI
-	w := ws.CreateClient(p.TargetURL, path)
-	err := w.HandleWebsocket(c)
+	w, err := ws.CreateClient(p.TargetURL, path)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	err = w.HandleWebsocket(c)
 	if err != nil {
 		return errors.WithStack(err)
 	}
