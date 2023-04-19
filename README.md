@@ -21,7 +21,7 @@ In that spirit, the tool is compatible with htpasswd, the common tool used to ge
 ### Required software
 * Docker
 * NPM (only for non-docker build)
-* Go (+1.19) (only for non-docker build)
+* Go (+1.20) (only for non-docker build)
 
 ### Start
 Change the `your-username` to your username of choice and change the environment variables to fit your needs.

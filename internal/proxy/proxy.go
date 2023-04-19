@@ -1,7 +1,9 @@
 package proxy
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	errorsCore "errors"
 	"fmt"
 	"git.ssns.se/git/frozendragon/simple-auth-proxy/internal/ws"
 	"github.com/labstack/echo/v4"
@@ -107,13 +109,21 @@ func getToken(c echo.Context) (string, string) {
 }
 
 func sendLoginFiles(c echo.Context) error {
-	filename := c.Request().RequestURI
+	filename := c.Request().URL.Path
 	if filename == "/" {
 		filename = "index.html"
 	}
 	filename = fmt.Sprintf("build/%s", filename)
 	file, err := os.Open(filename)
 	if err != nil {
+		if os.IsNotExist(err) {
+			urlRedirect := base64.StdEncoding.EncodeToString([]byte(c.Request().RequestURI))
+			callErr := c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("/?redirect=%s", urlRedirect))
+			err = errorsCore.Join(err, callErr)
+			if callErr == nil {
+				return nil
+			}
+		}
 		return errors.WithStack(err)
 	}
 	data, err := io.ReadAll(file)

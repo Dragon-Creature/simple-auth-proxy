@@ -5,6 +5,13 @@ function App(props) {
     const [username, setUsername] = useState(props?.value ?? '');
     const [password, setPassword] = useState(props?.value ?? '');
     const [error, setError] = useState(props?.value ?? '');
+    const search = window.location.search;
+    const params = new URLSearchParams(search);
+    let redirect = "/"
+    if (params.has('redirect')) {
+        const redirectEncoded = params.get('redirect');
+        redirect = atob(redirectEncoded);
+    }
 
     const login = () => {
         const body = {
@@ -21,7 +28,7 @@ function App(props) {
         })
         .then(response => {
           if (response.ok) {
-              window.location.reload();
+              window.location.replace(redirect);
           }
           setError(<p className={"error_message"}>Failed to authenticate</p>)
         })
@@ -38,8 +45,7 @@ function App(props) {
     }
 
     return (
-    <div className="App">
-          <body>
+        <div className="App">
               <div className={"login_prompt"}>
                   {error}
                   <div className={"prompt_box"}>
@@ -58,8 +64,7 @@ function App(props) {
                       </div>
                   </div>
               </div>
-          </body>
-    </div>
+        </div>
     );
 }
 
