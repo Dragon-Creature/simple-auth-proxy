@@ -166,7 +166,10 @@ func (p *Proxy) PostAuth(c echo.Context) error {
 		c.Logger().Error(err)
 		return err
 	}
-	hashCredential, auth := p.checkCredentials(credential)
+	hashCredential, auth, err := p.checkCredentials(credential)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	if auth {
 		p.setCookie(c, *hashCredential)
 		//http 301 causes a bunch of issues with fetch, the specs prevents you from doing a proper redirect so return http 200 instead and redirect based on header.
@@ -219,21 +222,21 @@ func (p *Proxy) checkToken(credential Credential) bool {
 	return false
 }
 
-func (p *Proxy) checkCredentials(credential Credential) (*Credential, bool) {
+func (p *Proxy) checkCredentials(credential Credential) (*Credential, bool, error) {
 	credentials, err := p.getPasswdFile()
 	if err != nil {
-		return nil, false
+		return nil, false, errors.WithStack(err)
 	}
 	for _, c := range credentials {
 		if c.Username == credential.Username {
 			err = checkPassword(c.Password, credential.Password)
 			if err != nil {
-				return nil, false
+				return nil, false, errors.WithStack(err)
 			}
-			return &c, true
+			return &c, true, nil
 		}
 	}
-	return nil, false
+	return nil, false, nil
 }
 
 type Credential struct {
